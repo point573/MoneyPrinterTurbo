@@ -14,7 +14,8 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --de
 RUN sed -i '/<policy domain="path" rights="none" pattern="@\*"/d' /etc/ImageMagick-6/policy.xml || true
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Agregar toml para manipular config.toml desde Python
+RUN pip install --no-cache-dir -r requirements.txt toml
 
 COPY . .
 
@@ -37,5 +38,5 @@ CADDYEOF
 ENV PORT=8000
 EXPOSE 8000
 
-# FastAPI escucha en :: (IPv4+IPv6)
-CMD ["bash", "-c", "uvicorn app.asgi:app --host '::' --port 8080 & streamlit run ./webui/Main.py --server.address=0.0.0.0 --server.port=8501 --server.enableCORS=true --browser.gatherUsageStats=false & sleep 5 && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile"]
+# Cargar variables de entorno y arrancar servicios
+CMD ["bash", "-c", "python load_env.py && uvicorn app.asgi:app --host '::' --port 8080 & streamlit run ./webui/Main.py --server.address=0.0.0.0 --server.port=8501 --server.enableCORS=true --browser.gatherUsageStats=false & sleep 5 && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile"]
