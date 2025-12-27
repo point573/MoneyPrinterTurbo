@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git imagemagick ffmpeg curl gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# Caddy
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
     && apt-get update && apt-get install -y caddy && rm -rf /var/lib/apt/lists/*
@@ -19,7 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Caddyfile - DESACTIVAR admin API y usar puerto correcto
 RUN cat > /etc/caddy/Caddyfile << 'CADDYEOF'
 {
     admin off
@@ -28,7 +26,7 @@ RUN cat > /etc/caddy/Caddyfile << 'CADDYEOF'
 :8000 {
     @api path /docs /docs/* /redoc /redoc/* /openapi.json /api/*
     handle @api {
-        reverse_proxy 127.0.0.1:8080
+        reverse_proxy [::1]:8080
     }
     handle {
         reverse_proxy 127.0.0.1:8501
@@ -36,8 +34,8 @@ RUN cat > /etc/caddy/Caddyfile << 'CADDYEOF'
 }
 CADDYEOF
 
-# Railway usa PORT, exponemos 8000 como default
 ENV PORT=8000
 EXPOSE 8000
 
-CMD ["bash", "-c", "python main.py & streamlit run ./webui/Main.py --server.address=0.0.0.0 --server.port=8501 --server.enableCORS=true --browser.gatherUsageStats=false & sleep 5 && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile"]
+# FastAPI escucha en :: (IPv4+IPv6)
+CMD ["bash", "-c", "uvicorn app.asgi:app --host '::' --port 8080 & streamlit run ./webui/Main.py --server.address=0.0.0.0 --server.port=8501 --server.enableCORS=true --browser.gatherUsageStats=false & sleep 5 && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile"]
