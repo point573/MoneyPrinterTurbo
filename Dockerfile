@@ -19,9 +19,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Caddyfile usando @matcher y handle (SIN stripear path)
+# Caddyfile - DESACTIVAR admin API y usar puerto correcto
 RUN cat > /etc/caddy/Caddyfile << 'CADDYEOF'
-:{$PORT} {
+{
+    admin off
+}
+
+:8000 {
     @api path /docs /docs/* /redoc /redoc/* /openapi.json /api/*
     handle @api {
         reverse_proxy 127.0.0.1:8080
@@ -32,6 +36,8 @@ RUN cat > /etc/caddy/Caddyfile << 'CADDYEOF'
 }
 CADDYEOF
 
-EXPOSE 8501
+# Railway usa PORT, exponemos 8000 como default
+ENV PORT=8000
+EXPOSE 8000
 
-CMD ["bash", "-c", "python main.py & streamlit run ./webui/Main.py --server.address=0.0.0.0 --server.port=8501 --server.enableCORS=true --browser.gatherUsageStats=false & sleep 3 && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile"]
+CMD ["bash", "-c", "python main.py & streamlit run ./webui/Main.py --server.address=0.0.0.0 --server.port=8501 --server.enableCORS=true --browser.gatherUsageStats=false & sleep 5 && caddy run --config /etc/caddy/Caddyfile --adapter caddyfile"]
